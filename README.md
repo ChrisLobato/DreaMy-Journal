@@ -57,8 +57,8 @@ npm install
 ```
 Create a .env file with the following:
 ```bash
-MONGODB_URI=your_mongo_connection_string
-JWT_SECRET=your_jwt_secret
+DATABASE_URL=your_PSQL_connection_URL
+APP_SECRET=your_jwt_secret
 ```
 Then Run:
 ```bash
