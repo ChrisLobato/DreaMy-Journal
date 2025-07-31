@@ -4,25 +4,20 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Button  from '@mui/material/Button';
 import LogoutIcon from '@mui/icons-material/Logout';
-import axios from 'axios';
 import { useContext } from 'react';
 import { AppContext } from '../AppContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../DreaMyJournalCat.svg'
-axios.defaults.withCredentials = true;
+import { logoutUser } from '../api/auth';
 
 export default function Banner() {
   const navigate = useNavigate();
   
   const { setCurrentUser } = useContext(AppContext);
-  function handleLogout(){
-    axios.get("http://localhost:8000/api/auth/logout")
-    .then((res) =>{
-      navigate("/");
-      setCurrentUser(null);
-
-    })
-
+  async function handleLogout(){
+    await logoutUser();
+    navigate("/");
+    setCurrentUser(null);
   }
 
 

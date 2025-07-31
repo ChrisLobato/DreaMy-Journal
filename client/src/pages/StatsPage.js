@@ -5,9 +5,8 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import TodayIcon from '@mui/icons-material/Today';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import { useContext, useEffect, useState } from 'react';
-import axios from 'axios';
 import { AppContext } from '../AppContext';
-axios.defaults.withCredentials = true;
+import { getStats } from '../api/entries';
 
 export default function StatsPage(){
     const { currentUser } = useContext(AppContext);
@@ -15,10 +14,8 @@ export default function StatsPage(){
     
     useEffect(()=>{
         async function fetchStats(){
-            const statsQuery = await axios.get("http://localhost:8000/api/journal/stats/" + currentUser.email)
-            .then((res)=>{
-                setStats(res.data);
-            });
+            const statsQuery = await getStats(currentUser.email);
+            setStats(statsQuery.data);
         }
         
         fetchStats();
