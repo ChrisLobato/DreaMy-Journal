@@ -24,14 +24,13 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
 
-
-import axios from "axios"
 import { useContext, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { AppContext } from "../AppContext";
 import SearchBar from "../components/Searchbar";
 import CalendarPicker from "../components/CalendarPickerRange";
-axios.defaults.withCredentials = true;
+import { getLoggedIn } from "../api/auth";
+import { getEntries, postEntry } from "../api/entries";
 
 
 export default function EntriesPage() {
@@ -56,35 +55,27 @@ export default function EntriesPage() {
     useEffect(() => {
         async function fetchData() {
             if (!currentUser) {
-                const userLoggedIn = await axios.get("http://localhost:8000/api/auth/loggedIn")
+                const userLoggedIn = await getLoggedIn();
                 const { email, username, createdAt } = userLoggedIn.data;
                 setCurrentUser({ email, username, createdAt });
-                await axios.get("http://localhost:8000/api/journal/entries", {
-                    params: {
+                const entriesFetched = await getEntries({
                         email,
                         page: 1,
                         limit: 9,
                         sort: "desc"
-                    }
-                })
-                    .then((res) => {
-                        setTotalEntries(Number(res.data.totalReturned));
-                        setEntries(res.data.entries);
                     });
+                setTotalEntries(Number(entriesFetched.data.totalReturned));
+                setEntries(entriesFetched.data.entries);           
             }
             else {
-                await axios.get("http://localhost:8000/api/journal/entries/", {
-                    params: {
+                const entriesFetched = await getEntries({
                         email: currentUser.email,
                         page: 1,
                         limit: 9,
                         sort: "desc"
-                    }
-                })
-                    .then((res) => {
-                        setTotalEntries(Number(res.data.totalReturned));
-                        setEntries(res.data.entries);
                     });
+                setTotalEntries(Number(entriesFetched.data.totalReturned));
+                setEntries(entriesFetched.data.entries);  
             }
         }
         fetchData();
@@ -93,8 +84,7 @@ export default function EntriesPage() {
     useEffect(() => {
         //TODO new request to make once user moves to next page
         async function fetchNewPage() {
-            await axios.get("http://localhost:8000/api/journal/entries/", {
-                params: {
+            const newSetOfEntries = await getEntries({
                     email: currentUser.email,
                     page: currentPage,
                     limit: 9,
@@ -102,12 +92,9 @@ export default function EntriesPage() {
                     sort: sort,
                     startDate: dateRange.start,
                     endDate: dateRange.end
-                }
-            })
-                .then((res) => {
-                    setTotalEntries(Number(res.data.totalReturned));//for page switching might not require updating total count cuz it might cause unneccessary rerender
-                    setEntries(res.data.entries);
                 });
+            setTotalEntries(Number(newSetOfEntries.data.totalReturned));//for page switching might not require updating total count cuz it might cause unneccessary rerender
+            setEntries(newSetOfEntries.data.entries);
         }
         fetchNewPage();
     }, [currentPage]);
@@ -123,8 +110,7 @@ export default function EntriesPage() {
 
     const handleSearch = async () => {
         //TODO insert axios request for getting entries based off the search text
-        await axios.get("http://localhost:8000/api/journal/entries/", {
-            params: {
+        const searchQuery = await getEntries({
                 email: currentUser.email,
                 page: 1,
                 limit: 9,
@@ -132,13 +118,10 @@ export default function EntriesPage() {
                 sort: "desc",
                 startDate: null,
                 endDate: null
-            }
-        })
-            .then((res) => {
-                setCurrentPage(1);// reset us back to the first page
-                setTotalEntries(Number(res.data.totalReturned));
-                setEntries(res.data.entries);
             });
+        setCurrentPage(1);// reset us back to the first page
+        setTotalEntries(Number(searchQuery.data.totalReturned));
+        setEntries(searchQuery.data.entries);
     }
     const handleSortDropDown = (e) => {
         setSort(e.target.value);
@@ -166,8 +149,7 @@ export default function EntriesPage() {
     };//TODO swap to clear current Search Filters
 
     const handleAdvancedSearch = async () => {
-        await axios.get("http://localhost:8000/api/journal/entries/", {
-            params: {
+        const advancedSearchQuery = await getEntries({
                 email: currentUser.email,
                 page: 1,
                 limit: 9,
@@ -175,13 +157,10 @@ export default function EntriesPage() {
                 sort: sort,
                 startDate: dateRange.start,
                 endDate: dateRange.end
-            }
-        })
-            .then((res) => {
-                setCurrentPage(1);// reset us back to the first page
-                setTotalEntries(Number(res.data.totalReturned));
-                setEntries(res.data.entries);
             });
+        setCurrentPage(1);// reset us back to the first page
+        setTotalEntries(Number(advancedSearchQuery.data.totalReturned));
+        setEntries(advancedSearchQuery.data.entries);
         setAdvancedOpen(false);
     }
 
@@ -193,21 +172,18 @@ export default function EntriesPage() {
     const handleModalClose = () => {
         setModalOpen(false);
     }
-    const handleEntrySubmit = () => {
+    const handleEntrySubmit = async () => {
         try {
-            axios.post("http://localhost:8000/api/journal/entry/" + currentUser.email, {
+            await postEntry(currentUser.email,{
                 text: entryText,
                 date: dayjs(dialogTitle).$d
-            }).then((res) => {
-                //refetch the entries 
-                handleSearch();
             });
+            handleSearch();
+            setModalOpen(false);
+            setEntryText('');
         } catch (err) {
             // console.log("problem sending request " + err)
         }
-        setModalOpen(false);
-        setEntryText('');
-
     }
 
 

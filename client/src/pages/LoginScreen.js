@@ -13,6 +13,7 @@ import {
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { AppContext } from '../AppContext.js';
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "../api/auth.js";
 
 
 export default function SignIn({ onLogin }) {
@@ -29,21 +30,14 @@ export default function SignIn({ onLogin }) {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/api/auth/login", {
-        method: "POST",
-        credentials: "include", // IMPORTANT: sends cookies
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await loginUser({ email, password });
 
-      const data = await response.json();
-      if (!response.ok) {
-        setErrorMsg(data.ErrorMsg || "Login failed.");
-        setLoading(false);
-        return;
-      }
+      const data = await response.data;
+      // if (!response.ok) {
+      //   setErrorMsg(data.ErrorMsg || "Login failed.");
+      //   setLoading(false);
+      //   return;
+      // }
 
       // If successful
       setCurrentUser({username: data.username, email: data.email, createdAt: data.createdAt});

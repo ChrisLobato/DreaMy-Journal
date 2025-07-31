@@ -14,11 +14,11 @@ import {
 } from '@mui/material';
 
 import dayjs from 'dayjs';
-import axios from 'axios';
 import { AppContext } from '../AppContext';
 import CalendarPlanner from '../components/CalendarPlanner';
-axios.defaults.withCredentials = true;
-// const drawerWidth = 240;
+import { getLoggedIn } from '../api/auth';
+import { getEntriesByMonth, postEntry, getEntries } from '../api/entries';
+
 
 export default function HomePage() {
   const requestAbortController = useRef(null);
@@ -35,7 +35,7 @@ export default function HomePage() {
   useEffect(()=>{
     //possible alternative is to decouple into 2 useEffects where second one depends on currentUser being updated
     const fetchData = async () =>{
-      const userLoggedIn = await axios.get("http://localhost:8000/api/auth/loggedIn")
+      const userLoggedIn = await getLoggedIn();
       const {email, username, createdAt} = userLoggedIn.data;
       setCurrentUser({email, username, createdAt});
       fetchRecentEntries(email)
@@ -68,23 +68,18 @@ export default function HomePage() {
     setIsEditing(false);
     setEntryText("");
   };
-  const handleEntrySubmit = () => {
+  const handleEntrySubmit = async () => {
     // TODO: send `entryText` and `selectedDate` to backend
     try{
-      axios.post("http://localhost:8000/api/journal/entry/" + currentUser.email,{
-        text: entryText,
-        date: selectedDate.$d
-      }).then((res) => {
-        fetchRecentEntries(currentUser.email);
-        fetchHighlightedDays(selectedDate,currentUser.email);
-      });
+      await postEntry(currentUser.email,{text: entryText, date: selectedDate.$d});
+      fetchRecentEntries(currentUser.email);
+      fetchHighlightedDays(selectedDate,currentUser.email);
+      setModalOpen(false);
+      setIsEditing(false);
+      setEntryText('');
     }catch (err) {
       // console.log("problem sending request " + err)
     }
-    // console.log(`Saving entry for ${selectedDate.format('YYYY-MM-DD')}:`, entryText);
-    setModalOpen(false);
-    setIsEditing(false);
-    setEntryText('');
   };
   //function to crudely generate a list of typography components that display the most recent entries
   function generateListOfRecentEntries(){
@@ -105,28 +100,13 @@ export default function HomePage() {
     //get the year and month selected
     const year = date.year();
     const month = date.month() + 1; //dayjs months 0 indexed
-
-    const entriesQuery = await axios.get("http://localhost:8000/api/journal/entriesbymonth/" + email,{
-      params: {
-        year: year,
-        month: month 
-      }
-    });
+    const entriesQuery = await getEntriesByMonth(email,{year:year, month:month});
 
     return entriesQuery.data.userEntriesByMonth;
   }
   async function fetchRecentEntries(email) {
-    const recentEntriesQuery = await axios.get("http://localhost:8000/api/journal/entries",{
-        params: {
-            email,
-            page:1,
-            limit:5,
-            search: " ",
-            sort: "desc"
-        }
-    });
-    const fiveMostRecentEntries = recentEntriesQuery.data.entries.slice(0,5); // will return a list in descending order of 5 most recent entries
-    setRecentEntries(fiveMostRecentEntries);
+    const recentEntriesQuery = await getEntries({email, page:1, limit: 5, search: " ", sort: "desc"});
+    setRecentEntries(recentEntriesQuery.data.entries);
   }
 
   const fetchHighlightedDays = (date, email) =>{

@@ -9,10 +9,9 @@ import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 
-import axios from "axios";
 import ErrorMsg from '../components/ErrorMsg';
 import { useNavigate } from 'react-router-dom';
-axios.defaults.withCredentials = true;
+import { registerUser } from '../api/auth';
 
 
 export default function SignUp() {
@@ -20,25 +19,19 @@ export default function SignUp() {
   const [errorMsg, setErrorMsg] = React.useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     try {
-      axios.post("http://localhost:8000/api/auth/register", {
+      const userRegisterData = await registerUser({
         username: data.get('username'),
         password: data.get('password'),
         email: data.get('email')
-      }).then((res) => {
-        if (res.data.message === "success") {
+      })
+      if (userRegisterData.data.message === "success") {
           setErrorMsg("")
           handleSwitchToLogin();
-        }
-      }).catch((err) => {
-        if (err.response.status === 400) {
-          setErrorMsg(err.response.data.ErrorMsg);
-          setErrorOpen(true);
-        }
-      });
+      }
     } catch (err) {
       setErrorMsg("Server error. Try again.");
     } finally {
