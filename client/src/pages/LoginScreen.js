@@ -33,11 +33,6 @@ export default function SignIn({ onLogin }) {
       const response = await loginUser({ email, password });
 
       const data = await response.data;
-      // if (!response.ok) {
-      //   setErrorMsg(data.ErrorMsg || "Login failed.");
-      //   setLoading(false);
-      //   return;
-      // }
 
       // If successful
       setCurrentUser({username: data.username, email: data.email, createdAt: data.createdAt});
