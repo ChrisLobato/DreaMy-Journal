@@ -15,7 +15,7 @@ require('dotenv').config();
 // db.on('error',console.error.bind(console,'MongoDB connection error: '));
 //Weird that on the last time i ran this it allowed me to make requests without the extra params but this time was required
 app.use(cors(
-    {origin: 'http://localhost:3000', // Update this with your frontend's origin
+    {origin: ['http://localhost:3000', process.env.REACT_APP_URL], // Update this with your frontend's origin
 credentials: true}));
 app.use(express.urlencoded({ extended: false })); // not sure about this
 app.use(express.json());
